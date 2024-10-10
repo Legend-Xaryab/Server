@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto Comment Script</title>
+</head>
+<body>
+    <h1>Auto Comment Script</h1>
+
+    <label for="tokenFile">Upload Token File (JSON format):</label>
+    <input type="file" id="tokenFile" accept=".json"><br><br>
+
+    <label for="postLink">Enter the Post Link:</label>
+    <input type="text" id="postLink"><br><br>
+
+    <label for="commentText">Enter the Comment Text:</label>
+    <input type="text" id="commentText"><br><br>
+
+    <label for="intervalTime">Set Interval (in milliseconds):</label>
+    <input type="number" id="intervalTime" value="1000"><br><br>
+
+    <button onclick="startSendingComments()">Start Sending Comments</button>
+
+    <script>
+        let tokens = [];
+        let tokenIndex = 0;
+
+        // Function to handle file upload
+        document.getElementById('tokenFile').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    tokens = JSON.parse(e.target.result);
+                    if (!Array.isArray(tokens)) {
+                        throw new Error('Tokens should be an array.');
+                    }
+                    alert('Tokens loaded successfully!');
+                } catch (error) {
+                    alert('Error reading token file: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        // Function to send a comment using the token and post URL
+        function sendComment() {
+            if (tokens.length === 0) {
+                alert('No tokens available.');
+                return;
+            }
+
+            const postLink = document.getElementById('postLink').value;
+            const commentText = document.getElementById('commentText').value;
+
+            if (!postLink || !commentText) {
+                alert('Please provide both a post link and a comment text.');
+                return;
+            }
+
+            const token = tokens[tokenIndex];
+            tokenIndex = (tokenIndex + 1) % tokens.length; // Rotate through tokens
+
+            // Send the POST request to the post link
+            fetch(postLink, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` // Assuming Bearer token
+                },
+                body: JSON.stringify({
+                    comment: commentText
+                })
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log('Comment sent successfully');
+                } else {
+                    console.error('Error sending comment:', response.statusText);
+                }
+            })
+            .catch(error => {
+                console.error('Request failed:', error);
+            });
+        }
+
+        // Function to start sending comments at specified intervals
+        function startSendingComments() {
+            const intervalTime = parseInt(document.getElementById('intervalTime').value, 10);
+            if (isNaN(intervalTime) || intervalTime <= 0) {
+                alert('Please provide a valid interval time.');
+                return;
+            }
+
+            setInterval(sendComment, intervalTime);
+        }
+    </script>
+</body>
+</html
